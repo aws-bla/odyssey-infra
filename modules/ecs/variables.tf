@@ -67,3 +67,8 @@ variable "backend_ecs_security_group_id" {
   description = "Backend ECS security group ID"
   type        = string
 }
+
+variable "vpc_cidr" {
+  description = "VPC CIDR block"
+  type        = string
+}

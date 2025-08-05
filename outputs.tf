@@ -74,10 +74,7 @@ output "ai_service_name" {
 }
 
 # IAM Outputs
-output "iam_role_arn" {
-  description = "ARN of the IAM role"
-  value       = module.iam.role_arn
-}
+
 
 # Secrets Manager
 output "secrets_arn" {

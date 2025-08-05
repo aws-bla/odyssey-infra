@@ -111,6 +111,7 @@ module "alb" {
   project           = var.project
   environment       = var.environment
   vpc_id            = module.vpc.vpc_id
+  vpc_cidr          = var.vpc_cidr
   public_subnet_ids = module.vpc.public_subnet_ids
   private_subnet_ids = module.vpc.private_subnet_ids
 }
@@ -123,6 +124,7 @@ module "ecs" {
   project            = var.project
   environment        = var.environment
   vpc_id             = module.vpc.vpc_id
+  vpc_cidr           = var.vpc_cidr
   private_subnet_ids = module.vpc.private_subnet_ids
   backend_ecr_url    = module.ecr.backend_repository_url
   ai_ecr_url         = module.ecr.ai_repository_url
