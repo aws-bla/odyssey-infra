@@ -8,17 +8,7 @@ variable "project" {
   type        = string
 }
 
-variable "component" {
-  description = "Component name for resource naming"
-  type        = string
-}
-
 variable "environment" {
   description = "Environment name"
-  type        = string
-}
-
-variable "secrets_arn" {
-  description = "ARN of the Secrets Manager secret"
   type        = string
 }

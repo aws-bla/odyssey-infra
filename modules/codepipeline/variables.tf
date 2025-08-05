@@ -1,37 +1,20 @@
 variable "company" {
   description = "Company name for resource naming"
   type        = string
-  default     = "bla"
 }
 
 variable "project" {
   description = "Project name for resource naming"
   type        = string
-  default     = "odyssey"
-}
-
-variable "region" {
-  description = "AWS region"
-  type        = string
-  default     = "us-east-1"
 }
 
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "dev"
 }
-
-variable "vpc_cidr" {
-  description = "CIDR block for VPC"
-  type        = string
-  default     = "10.0.0.0/16"
-}
-
-# Domain variables removed - using default CloudFront and ALB DNS names
 
 variable "github_owner" {
-  description = "GitHub repository owner/organization"
+  description = "GitHub repository owner"
   type        = string
 }
 
@@ -48,6 +31,29 @@ variable "github_services_repo" {
 variable "github_branch" {
   description = "GitHub branch to track"
   type        = string
-  default     = "main"
 }
 
+variable "codepipeline_role_arn" {
+  description = "CodePipeline service role ARN"
+  type        = string
+}
+
+variable "artifacts_bucket_name" {
+  description = "S3 bucket for pipeline artifacts"
+  type        = string
+}
+
+variable "frontend_build_project_name" {
+  description = "Frontend CodeBuild project name"
+  type        = string
+}
+
+variable "backend_build_project_name" {
+  description = "Backend CodeBuild project name"
+  type        = string
+}
+
+variable "ai_build_project_name" {
+  description = "AI CodeBuild project name"
+  type        = string
+}

@@ -1,232 +1,319 @@
-# Odyssey Infra Project
+# Odyssey Full-Stack Infrastructure
 
-This repository contains Terraform infrastructure as code for AWS resources with remote state management and team collaboration support.
+This repository contains Terraform infrastructure as code for a complete full-stack web application with React frontend, Python Flask backend, AI processing service, and AWS CodePipeline CI/CD.
+
+## Architecture Overview
+
+![Architecture Diagram](docs/architecture.jpg)
+
+### Key Architecture Components
+
+- **Frontend**: React app served via CloudFront + S3
+- **Backend**: Python Flask service via public ALB
+- **AI Service**: Internal processing service via internal ALB
+- **Same ECS Cluster**: Both backend and AI services run in same cluster, private subnets
+- **Network Isolation**: AI service only accessible through internal ALB from backend
+- **CI/CD**: Separate pipelines for frontend and services with automated ECS deployment
+
+## Stack Components
+
+### Frontend (React)
+- **S3**: Static website hosting
+- **CloudFront**: CDN with default CloudFront domain
+- **CodePipeline**: Automated deployment from GitHub
+
+### Backend Services (Python Flask)
+- **ECS Fargate**: Containerized services
+- **ALB**: Load balancing with HTTP (default ALB domain)
+- **ECR**: Container registry
+- **Secrets Manager**: Secure configuration
+- **CodePipeline**: Docker build and deployment
+
+### AI Processing Service (Internal)
+- **ECS Fargate**: Containerized AI service in same cluster as backend
+- **Internal ALB**: Private load balancer in private subnets (HTTP only)
+- **Security Groups**: Backend-to-AI communication only
+- **No Public Access**: Accessible only by Flask backend through internal ALB
+- **Same Subnets**: Deployed in same private subnets as backend service
+
+### CI/CD Infrastructure
+- **CodePipeline**: Orchestrates deployments
+- **CodeBuild**: Builds and deploys applications
+- **CodeStar Connections**: GitHub integration
+- **IAM**: Service roles with least privilege
 
 ## Prerequisites
 
 - AWS CLI configured with appropriate credentials
 - Terraform >= 1.5
-- Access to AWS account with permissions to create S3, DynamoDB, and other resources
+- GitHub repository with your application code
 
 ## Quick Start
 
-**New to this project?** See [SETUP.md](SETUP.md) for step-by-step setup instructions.
-
-## Project Structure
-
-```
-├── main.tf                      # Root module configuration
-├── variables.tf                 # Input variables
-├── outputs.tf                   # Output values
-├── backend.tf                   # Remote state backend
-├── bootstrap/                   # Initial setup for remote state
-└── modules/                     # Reusable m```
-
-## Initial Setup (One-time Bootstrap)
-
-### 1. Bootstrap Remote State Backend
-
-First, create the S3 bucket and DynamoDB table for remote state. The naming follows the pattern `bla-odyssey-<environment>-<component>-<identifier>`:
+### 1. Configure Variables
 
 ```bash
-cd bootstrap
+# Copy and edit terraform variables
+cp terraform.tfvars.example terraform.tfvars
 
-# For dev environment (default)
+# Edit terraform.tfvars with your configuration
+vim terraform.tfvars
+```
+
+Required configuration:
+```hcl
+github_owner = "your-username"  # GitHub username/organization
+github_repo = "your-repo-name"  # Repository name
+```
+
+### 2. Bootstrap Infrastructure
+
+```bash
+# Bootstrap remote state (one-time setup)
+cd bootstrap
 terraform init
-terraform plan
 terraform apply
 
-# For other environments, override variables
-terraform apply -var="environment=prod"
-```
-
-This creates:
-- S3 bucket: `bla-odyssey-dev-terraform-state`
-- DynamoDB table: `bla-odyssey-dev-terraform-lock`
-- KMS key: `bla-odyssey-dev-kms-01`
-
-### 2. Configure Backend
-
-The `backend.tf` uses workspace-specific naming:
-
-```hcl
-terraform {
-  backend "s3" {
-    bucket         = "bla-odyssey-dev-terraform-state"
-    key            = "terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "bla-odyssey-dev-terraform-lock"
-    encrypt        = true
-    workspace_key_prefix = "workspaces"
-  }
-}
-```
-
-### 3. Initialize Main Configuration
-
-```bash
-# Return to root directory
+# Initialize main infrastructure
 cd ..
-
-# Initialize with remote backend
 terraform init
-
-# Create and select workspace
 terraform workspace new dev
 terraform workspace select dev
 ```
 
-## Team Collaboration
-
-### Shared AWS Account Setup
-
-When multiple developers use the same AWS account:
-
-1. **One-time bootstrap**: Only one team member runs the bootstrap
-2. **Individual workspaces**: Each developer creates their own workspace
-3. **Resource isolation**: Workspaces prevent resource name conflicts
+### 3. Deploy Infrastructure
 
 ```bash
-# Each developer creates their own workspace
-terraform workspace new john-feature-auth
-terraform workspace new sarah-vpc-updates
-terraform workspace new mike-s3-config
-```
-
-This creates isolated resources:
-- John: `bla-odyssey-john-feature-auth-vpc-01`
-- Sarah: `bla-odyssey-sarah-vpc-updates-vpc-01`
-- Mike: `bla-odyssey-mike-s3-config-vpc-01`
-
-## Daily Workflow
-
-### Working with Workspaces
-
-```bash
-# List workspaces
-terraform workspace list
-
-# Create feature workspace
-terraform workspace new feature/my-feature
-
-# Switch workspace
-terraform workspace select feature/my-feature
-
-# Delete workspace (after merging)
-terraform workspace delete feature/my-feature
-```
-
-### Planning and Applying Changes
-
-```bash
-# Format and validate
-terraform fmt -recursive
-terraform validate
-
-# Plan changes
+# Plan and apply infrastructure
 terraform plan -out=tfplan
-
-# Apply changes
 terraform apply tfplan
 ```
 
-## Naming Convention
+### 4. Connect GitHub Repository
 
-All resources follow the standardized naming pattern:
-```
-<company>-<project>-<environment>-<component>-<identifier>
-```
+After deployment, you need to activate the GitHub connection:
+
+1. Go to AWS Console → Developer Tools → Settings → Connections
+2. Find your connection (e.g., `bla-odyssey-dev-github-connection`)
+3. Click "Update pending connection"
+4. Complete GitHub OAuth flow
+5. Connection status should change to "Available"
+
+### 5. Add Buildspec Files to Repository
+
+Copy the buildspec files to your repository root:
+- `buildspec-frontend.yml` - React frontend deployment
+- `buildspec-backend.yml` - Backend Docker deployment  
+- `buildspec-ai.yml` - AI service Docker deployment
+
+## Resource Naming Convention
+
+All resources follow the pattern: `bla-odyssey-<workspace>-<component>-<identifier>`
 
 Examples:
 - VPC: `bla-odyssey-dev-vpc-01`
-- Subnets: `bla-odyssey-dev-vpc-subnet-public-01`, `bla-odyssey-dev-vpc-subnet-public-02`
-- IAM Role: `bla-odyssey-dev-iam-role-01`
-- S3 Bucket: `bla-odyssey-dev-s3-data`
+- S3 Bucket: `bla-odyssey-dev-s3-frontend`
+- ECS Cluster: `bla-odyssey-dev-cluster`
+- Pipeline: `bla-odyssey-dev-frontend-pipeline`
 
-## Environment Variables
+## CI/CD Pipelines
 
-Set these environment variables to override defaults:
+### Frontend Pipeline
+1. **Source**: GitHub repository trigger
+2. **Build**: CodeBuild project
+   - Install Node.js dependencies
+   - Build React application
+   - Sync to S3 bucket
+   - Invalidate CloudFront cache
+
+### Backend Pipeline
+1. **Source**: GitHub repository trigger
+2. **Build**: CodeBuild project
+   - Build Docker image
+   - Push to ECR repository
+   - ECS performs rolling deployment
+
+### AI Service Pipeline
+1. **Source**: GitHub repository trigger
+2. **Build**: CodeBuild project
+   - Build Docker image
+   - Push to ECR repository
+   - ECS performs rolling deployment
+
+**Note**: ECS deployment is **not automatic** after ECR push - it's explicitly triggered by CodeBuild
+
+## Accessing Your Applications
+
+After deployment, your applications will be available at:
+
+- **Frontend**: CloudFront default domain (from Terraform output `frontend_cloudfront_domain`)
+- **Backend**: ALB default domain (from Terraform output `backend_alb_dns`)
+- **AI Service**: Internal only (from Terraform output `ai_internal_alb_dns`)
+
+Get the URLs from Terraform outputs:
+```bash
+terraform output frontend_cloudfront_domain
+terraform output backend_alb_dns
+terraform output ai_internal_alb_dns
+```
+
+## Secrets Management
+
+### Managing Application Secrets
 
 ```bash
-export TF_VAR_company="bla"                # Company name
-export TF_VAR_project="odyssey"            # Project name (or "quantum", "phoenix")
-export TF_VAR_region="us-west-2"           # Override default region
-export TF_VAR_environment="production"     # Set environment tag
+# Update secrets in AWS Secrets Manager
+aws secretsmanager update-secret \
+  --secret-id bla-odyssey-dev-app-secrets \
+  --secret-string '{
+    "database_url": "postgresql://user:pass@host:5432/db",
+    "api_key": "your-api-key",
+    "jwt_secret": "your-jwt-secret",
+    "redis_url": "redis://host:6379"
+  }'
 ```
 
-## CI/CD Integration
+### Accessing Secrets in Applications
 
-### GitHub Actions Example
+Secrets are automatically injected into ECS containers:
 
-```yaml
-- name: Terraform Init
-  run: terraform init -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
+```python
+# Python example
+import json
+import os
+import boto3
 
-- name: Terraform Plan
-  run: terraform plan -out=tfplan
+def get_secrets():
+    secrets_client = boto3.client('secretsmanager')
+    secret_name = os.environ.get('SECRETS_NAME', 'bla-odyssey-dev-app-secrets')
+    response = secrets_client.get_secret_value(SecretId=secret_name)
+    return json.loads(response['SecretString'])
 
-- name: Terraform Apply
-  run: terraform apply tfplan
-  if: github.ref == 'refs/heads/main'
+secrets = get_secrets()
+database_url = secrets['database_url']
 ```
 
-## Best Practices
+## Development Workflow
 
-1. **Always use workspaces** for feature branches and environments
-2. **Use descriptive workspace names** (e.g., `john-feature-auth`, `sarah-vpc-updates`)
-3. **Run `terraform fmt`** before committing
-4. **Use pull requests** for all infrastructure changes
-5. **Review plans carefully** before applying
-6. **State locking** is automatic with DynamoDB - don't force unlock unless necessary
-7. **Keep sensitive values** in environment variables or AWS Secrets Manager
-8. **Clean up workspaces** after feature completion to avoid resource sprawl
+### Local Development
 
-## Troubleshooting
-
-### State Lock Issues
 ```bash
-# Only use if absolutely necessary
-terraform force-unlock <lock-id>
+# Frontend development
+cd odyssey-app/frontend
+npm start  # Runs on http://localhost:3000
+
+# Backend development
+cd odyssey-app/backend
+pip install -r requirements.txt
+python app.py  # Runs on http://localhost:5000
+
+# AI service development
+cd odyssey-services/ai-service
+pip install -r requirements.txt
+python app.py  # Runs on http://localhost:8000
 ```
 
-### Backend Migration
+### Triggering Deployments
+
+Deployments are automatically triggered by pushing to the configured branch:
+
 ```bash
-terraform init -migrate-state
+# Make changes to your code
+git add .
+git commit -m "Update application"
+git push origin main  # Triggers all relevant pipelines
 ```
 
-### Workspace Issues
+## Monitoring and Troubleshooting
+
+### Pipeline Status
+
+Monitor pipeline status in AWS Console:
+- CodePipeline → Pipelines
+- CodeBuild → Build projects
+
+### CloudWatch Logs
+
 ```bash
-# If workspace is corrupted, recreate it
-terraform workspace delete <workspace-name>
-terraform workspace new <workspace-name>
+# View ECS service logs
+aws logs tail /ecs/bla-odyssey-dev-backend --follow
+aws logs tail /ecs/bla-odyssey-dev-ai --follow
+
+# View CodeBuild logs
+aws logs tail /aws/codebuild/bla-odyssey-dev-frontend-build --follow
 ```
 
-## Module Usage
+### Health Checks
 
-Modules are located in the `modules/` directory and use standardized naming:
+- Frontend: Use CloudFront domain from Terraform output
+- Backend: Use ALB domain from Terraform output + `/health`
+- AI Service: Internal only - accessible via backend at `/api/ai/process`
 
-```hcl
-module "vpc" {
-  source = "./modules/vpc"
-  
-  company     = var.company
-  project     = var.project
-  component   = "vpc"
-  vpc_cidr    = "10.0.0.0/16"
-  environment = var.environment
-}
+### Common Issues
 
-module "s3" {
-  source = "./modules/s3"
-  
-  company     = var.company
-  project     = var.project
-  component   = "s3"
-  bucket_name = "${local.base_name}-s3-data"
-  environment = var.environment
-}
+1. **GitHub connection pending**: Complete OAuth flow in AWS Console
+2. **Build failures**: Check CodeBuild logs and buildspec files
+3. **ECS deployment issues**: Verify ECR images and ECS service configuration
+
+## Security Architecture
+
+### Network Security
+- **Public Tier**: CloudFront, Public ALB (Backend only)
+- **Private Tier**: ECS services, Internal ALB (AI service)
+- **Security Groups**: Least-privilege access between tiers
+
+### AI Service Security
+- **Internal Only**: No public internet access
+- **Backend Proxy**: All AI requests go through Flask backend
+- **Security Group Rules**:
+  - Backend ECS → AI Internal ALB (port 8000)
+  - AI ECS ← Internal ALB only
+  - No direct frontend → AI communication
+
+## Security Best Practices
+
+- S3 bucket is private (CloudFront access only)
+- ECS services in private subnets
+- AI service isolated from public internet
+- Secrets stored in AWS Secrets Manager
+- IAM roles follow least-privilege principle
+- CodeStar Connections for secure GitHub integration
+- No hardcoded secrets or personal access tokens
+
+## Cost Optimization
+
+- ECS Fargate with minimal CPU/memory allocation
+- CloudFront caching reduces origin requests
+- S3 lifecycle policies for old versions
+- ECR lifecycle policies for old images
+- CloudWatch log retention policies
+- CodeBuild on-demand pricing
+
+## Cleanup
+
+```bash
+# Destroy infrastructure
+terraform destroy
+
+# Clean up bootstrap resources
+cd bootstrap
+terraform destroy
 ```
 
-This creates resources with names like:
-- `bla-odyssey-dev-vpc-01`
-- `bla-odyssey-dev-s3-data`
+## Module Structure
+
+```
+modules/
+├── vpc/          # VPC with public/private subnets
+├── iam/          # IAM roles and policies
+├── s3/           # S3 bucket for frontend
+├── cloudfront/   # CloudFront distribution
+├── secrets/      # Secrets Manager
+├── ecr/          # Container registries
+├── alb/          # Application Load Balancers
+├── ecs/          # ECS cluster and services
+├── codebuild/    # CodeBuild projects
+└── codepipeline/ # CodePipeline workflows
+```
+
+Each module is self-contained with variables, outputs, and proper resource tagging.

@@ -25,7 +25,7 @@ variable "region" {
 variable "state_bucket_name" {
   description = "Name of the S3 bucket for Terraform state"
   type        = string
-  default     = "bla-odyssey-dev-terraform-state"
+  default     = "bla-odyssey-dev-terraform-state-811829856208"
 }
 
 variable "dynamodb_table_name" {

@@ -1,10 +1,13 @@
-# Copy this file to terraform.tfvars and customize values
-
-# Naming convention variables
-company     = "bla"
-project     = "odyssey"
-
-# Infrastructure variables
-region      = "us-east-1"
+# Company and project configuration
+company = "bla"
+project = "odyssey"
+region  = "us-east-1"
 environment = "dev"
-vpc_cidr    = "10.0.0.0/16"
+
+# Network configuration
+vpc_cidr = "10.0.0.0/16"
+
+# GitHub configuration (REQUIRED)
+github_owner = "your-github-username"  # GitHub username or organization
+github_repo = "your-repo-name"         # Repository name
+github_branch = "main"                 # Branch to track
