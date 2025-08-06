@@ -13,11 +13,6 @@ output "backend_dns_name" {
   value       = aws_lb.backend.dns_name
 }
 
-output "backend_zone_id" {
-  description = "Backend ALB zone ID"
-  value       = aws_lb.backend.zone_id
-}
-
 output "ai_internal_dns_name" {
   description = "AI internal ALB DNS name"
   value       = aws_lb.ai_internal.dns_name

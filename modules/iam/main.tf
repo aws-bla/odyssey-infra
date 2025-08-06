@@ -1,5 +1,5 @@
 locals {
-  base_name = "${var.company}-${var.project}-${terraform.workspace}-${var.component}"
+  base_name = "${var.company}-${var.project}-${terraform.workspace}"
 }
 
 # ECS Task Execution Role
@@ -22,7 +22,7 @@ resource "aws_iam_role" "ecs_execution_role" {
 
   tags = {
     Name        = "${local.base_name}-ecs-execution-role"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -38,7 +38,7 @@ data "aws_iam_policy_document" "secrets_access" {
     actions = [
       "secretsmanager:GetSecretValue"
     ]
-    resources = [var.secrets_arn]
+    resources = [var.secrets_arn, var.kb_secrets_arn]
   }
 }
 
@@ -73,7 +73,7 @@ resource "aws_iam_role" "ecs_task_role" {
 
   tags = {
     Name        = "${local.base_name}-ecs-task-role"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -84,7 +84,42 @@ data "aws_iam_policy_document" "ecs_task_policy" {
     actions = [
       "secretsmanager:GetSecretValue"
     ]
-    resources = [var.secrets_arn]
+    resources = [var.secrets_arn, var.kb_secrets_arn]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      var.input_bucket_arn,
+      "${var.input_bucket_arn}/*"
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      var.output_bucket_arn,
+      "${var.output_bucket_arn}/*"
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "bedrock:Retrieve",
+      "bedrock:ListKnowledgeBases"
+    ]
+    resources = ["*"]
   }
 }
 
@@ -121,7 +156,7 @@ resource "aws_iam_role" "codepipeline_role" {
 
   tags = {
     Name        = "${local.base_name}-codepipeline-role"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -181,7 +216,7 @@ resource "aws_iam_role" "codebuild_role" {
 
   tags = {
     Name        = "${local.base_name}-codebuild-role"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 

@@ -2,7 +2,6 @@
 company = "bla"
 project = "odyssey"
 region  = "us-east-1"
-environment = "dev"
 
 # Network configuration
 vpc_cidr = "10.0.0.0/16"
@@ -10,4 +9,5 @@ vpc_cidr = "10.0.0.0/16"
 # GitHub configuration (REQUIRED)
 github_owner = "your-github-username"  # GitHub username or organization
 github_repo = "your-repo-name"         # Repository name
+github_services_repo = "your-services-repo-name"  # Services repository name
 github_branch = "main"                 # Branch to track

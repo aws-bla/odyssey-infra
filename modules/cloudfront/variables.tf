@@ -8,10 +8,7 @@ variable "project" {
   type        = string
 }
 
-variable "environment" {
-  description = "Environment name"
-  type        = string
-}
+
 
 variable "s3_bucket_id" {
   description = "S3 bucket ID"

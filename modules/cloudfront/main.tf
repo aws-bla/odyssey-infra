@@ -68,7 +68,7 @@ resource "aws_cloudfront_distribution" "main" {
 
   tags = {
     Name        = "${local.base_name}-cloudfront"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 

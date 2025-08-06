@@ -25,6 +25,16 @@ output "s3_bucket_name" {
   value       = module.s3.bucket_name
 }
 
+output "input_bucket_name" {
+  description = "Name of the input S3 bucket"
+  value       = module.s3.input_bucket_name
+}
+
+output "output_bucket_name" {
+  description = "Name of the output S3 bucket"
+  value       = module.s3.output_bucket_name
+}
+
 output "cloudfront_distribution_id" {
   description = "CloudFront distribution ID"
   value       = module.cloudfront.distribution_id
@@ -72,9 +82,6 @@ output "ai_service_name" {
   description = "AI ECS service name"
   value       = module.ecs.ai_service_name
 }
-
-# IAM Outputs
-
 
 # Secrets Manager
 output "secrets_arn" {

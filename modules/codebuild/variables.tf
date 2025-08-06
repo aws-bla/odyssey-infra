@@ -8,10 +8,7 @@ variable "project" {
   type        = string
 }
 
-variable "environment" {
-  description = "Environment name"
-  type        = string
-}
+
 
 variable "codebuild_role_arn" {
   description = "CodeBuild service role ARN"
@@ -50,5 +47,10 @@ variable "backend_service_name" {
 
 variable "ai_service_name" {
   description = "AI ECS service name"
+  type        = string
+}
+
+variable "backend_alb_dns" {
+  description = "Backend ALB DNS name"
   type        = string
 }

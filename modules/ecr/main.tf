@@ -13,7 +13,7 @@ resource "aws_ecr_repository" "backend" {
 
   tags = {
     Name        = "${local.base_name}-backend"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -24,12 +24,12 @@ resource "aws_ecr_lifecycle_policy" "backend" {
     rules = [
       {
         rulePriority = 1
-        description  = "Keep last 10 images"
+        description  = "Delete untagged images after 7 days"
         selection = {
-          tagStatus     = "tagged"
-          tagPrefixList = ["v"]
-          countType     = "imageCountMoreThan"
-          countNumber   = 10
+          tagStatus   = "untagged"
+          countType   = "sinceImagePushed"
+          countUnit   = "days"
+          countNumber = 7
         }
         action = {
           type = "expire"
@@ -50,7 +50,7 @@ resource "aws_ecr_repository" "ai" {
 
   tags = {
     Name        = "${local.base_name}-ai"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -61,12 +61,12 @@ resource "aws_ecr_lifecycle_policy" "ai" {
     rules = [
       {
         rulePriority = 1
-        description  = "Keep last 10 images"
+        description  = "Delete untagged images after 7 days"
         selection = {
-          tagStatus     = "tagged"
-          tagPrefixList = ["v"]
-          countType     = "imageCountMoreThan"
-          countNumber   = 10
+          tagStatus   = "untagged"
+          countType   = "sinceImagePushed"
+          countUnit   = "days"
+          countNumber = 7
         }
         action = {
           type = "expire"

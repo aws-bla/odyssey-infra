@@ -22,6 +22,11 @@ This repository contains Terraform infrastructure as code for a complete full-st
 - **CloudFront**: CDN with default CloudFront domain
 - **CodePipeline**: Automated deployment from GitHub
 
+### Storage (S3)
+- **Input Bucket**: `bla-odyssey-dev-s3-input` - For storing input files (requirements, business docs)
+- **Output Bucket**: `bla-odyssey-dev-s3-output` - For storing generated artifacts (code, reports, test scenarios)
+- **Access Control**: ECS services have read access to input bucket, full access to output bucket
+
 ### Backend Services (Python Flask)
 - **ECS Fargate**: Containerized services
 - **ALB**: Load balancing with HTTP (default ALB domain)
@@ -35,6 +40,7 @@ This repository contains Terraform infrastructure as code for a complete full-st
 - **Security Groups**: Backend-to-AI communication only
 - **No Public Access**: Accessible only by Flask backend through internal ALB
 - **Same Subnets**: Deployed in same private subnets as backend service
+- **Direct Bedrock Integration**: Queries Amazon Bedrock Knowledge Base directly using boto3
 
 ### CI/CD Infrastructure
 - **CodePipeline**: Orchestrates deployments
@@ -150,11 +156,113 @@ After deployment, your applications will be available at:
 - **Backend**: ALB default domain (from Terraform output `backend_alb_dns`)
 - **AI Service**: Internal only (from Terraform output `ai_internal_alb_dns`)
 
-Get the URLs from Terraform outputs:
+Get the URLs and bucket names from Terraform outputs:
 ```bash
 terraform output frontend_cloudfront_domain
 terraform output backend_alb_dns
 terraform output ai_internal_alb_dns
+terraform output input_bucket_name
+terraform output output_bucket_name
+```
+
+## Knowledge Base Integration
+
+### Amazon Bedrock Knowledge Base MCP Integration
+
+The AI Processing Service uses an MCP (Model Context Protocol) sidecar container to query Amazon Bedrock Knowledge Bases:
+
+- **MCP Sidecar**: AWS Labs official MCP server (`public.ecr.aws/awslabs-mcp/awslabs/bedrock-kb-retrieval-mcp-server:latest`)
+- **Dynamic KB IDs**: Knowledge Base ID provided per-request, no hardcoded configurations
+- **Auto-Discovery**: MCP server discovers available KBs using injected AWS credentials
+- **Secure Credentials**: Flat AWS credentials stored in Secrets Manager
+- **Container Communication**: AI service calls MCP sidecar via `http://localhost:7000`
+
+### MCP Server Configuration
+
+The MCP sidecar container is configured with:
+
+```hcl
+# Essential environment variables
+AWS_REGION = "us-east-1"
+FASTMCP_LOG_LEVEL = "ERROR"
+BEDROCK_KB_RERANKING_ENABLED = "false"
+
+# AWS credentials injected as secrets
+AWS_ACCESS_KEY_ID = "<from-secrets-manager>"
+AWS_SECRET_ACCESS_KEY = "<from-secrets-manager>"
+# AWS_SESSION_TOKEN = "<optional-for-temporary-creds>"
+```
+
+### AWS Credentials Management
+
+```bash
+# Update AWS credentials for MCP server
+aws secretsmanager update-secret \
+  --secret-id bla-odyssey-dev-mcp-credentials \
+  --secret-string '{
+    "AWS_ACCESS_KEY_ID": "AKIA...",
+    "AWS_SECRET_ACCESS_KEY": "your-secret-key"
+  }'
+
+# For temporary credentials, include session token
+aws secretsmanager update-secret \
+  --secret-id bla-odyssey-dev-mcp-credentials \
+  --secret-string '{
+    "AWS_ACCESS_KEY_ID": "ASIA...",
+    "AWS_SECRET_ACCESS_KEY": "your-secret-key",
+    "AWS_SESSION_TOKEN": "your-session-token"
+  }'
+
+# Restart AI service to pick up credential changes
+aws ecs update-service --cluster bla-odyssey-dev-cluster --service bla-odyssey-dev-ai-service --force-new-deployment
+```
+
+### Using Knowledge Base in AI Service
+
+```python
+# Query specific Knowledge Base (KB ID required)
+response = requests.post(
+    "http://your-ai-alb-domain/kb/query",
+    json={
+        "query": "your search query",
+        "knowledgeBaseId": "kb-123456789"  # Required: provide KB ID
+    }
+)
+
+# List available Knowledge Bases (auto-discovered)
+response = requests.get("http://your-ai-alb-domain/kb/list")
+
+# AI processing with KB enhancement
+response = requests.post(
+    "http://your-ai-alb-domain/ai/process",
+    json={
+        "query": "your search query",
+        "knowledgeBaseId": "kb-123456789"
+    }
+)
+```
+
+### API Endpoints
+
+- `POST /kb/query`: Query Knowledge Base via MCP server (requires `knowledgeBaseId`)
+- `GET /kb/list`: List auto-discovered Knowledge Bases
+- `GET /health`: Health check for AI service
+- `POST /ai/process`: AI processing with optional KB enhancement
+
+### MCP Server Architecture
+
+```
+┌─────────────────┐    HTTP     ┌─────────────────┐    AWS API    ┌──────────────────┐
+│   AI Service    │ ──────────► │   MCP Server    │ ────────────► │ Bedrock KB API   │
+│   (Port 8000)   │ localhost   │   (Port 7000)   │               │                  │
+└─────────────────┘   :7000     └─────────────────┘               └──────────────────┘
+        │                               │
+        │                               │
+        ▼                               ▼
+┌─────────────────┐               ┌─────────────────┐
+│ App Secrets     │               │ MCP Credentials │
+│ (AI Config)     │               │ (AWS Creds)     │
+└─────────────────┘               └─────────────────┘
 ```
 
 ## Secrets Management
@@ -162,7 +270,7 @@ terraform output ai_internal_alb_dns
 ### Managing Application Secrets
 
 ```bash
-# Update secrets in AWS Secrets Manager
+# Update application secrets in AWS Secrets Manager
 aws secretsmanager update-secret \
   --secret-id bla-odyssey-dev-app-secrets \
   --secret-string '{
@@ -170,6 +278,23 @@ aws secretsmanager update-secret \
     "api_key": "your-api-key",
     "jwt_secret": "your-jwt-secret",
     "redis_url": "redis://host:6379"
+  }'
+
+# Update MCP server AWS credentials (flat structure)
+aws secretsmanager update-secret \
+  --secret-id bla-odyssey-dev-mcp-credentials \
+  --secret-string '{
+    "AWS_ACCESS_KEY_ID": "AKIA...",
+    "AWS_SECRET_ACCESS_KEY": "your-secret-access-key"
+  }'
+
+# For temporary credentials (STS assume role)
+aws secretsmanager update-secret \
+  --secret-id bla-odyssey-dev-mcp-credentials \
+  --secret-string '{
+    "AWS_ACCESS_KEY_ID": "ASIA...",
+    "AWS_SECRET_ACCESS_KEY": "your-secret-access-key",
+    "AWS_SESSION_TOKEN": "your-session-token"
   }'
 ```
 

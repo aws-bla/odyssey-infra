@@ -17,21 +17,21 @@ resource "aws_security_group" "alb" {
 
   egress {
     description = "Allow traffic to backend ECS tasks"
-    from_port   = 5000
-    to_port     = 5000
+    from_port   = 4200
+    to_port     = 4200
     protocol    = "tcp"
     cidr_blocks = [var.vpc_cidr]
   }
 
   tags = {
     Name        = "${local.base_name}-alb-sg"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
 # Backend ALB
 resource "aws_lb" "backend" {
-  name               = "${local.base_name}-be-alb"
+  name               = "${local.base_name}-backend-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
@@ -41,13 +41,13 @@ resource "aws_lb" "backend" {
 
   tags = {
     Name        = "${local.base_name}-backend-alb"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
 resource "aws_lb_target_group" "backend" {
-  name        = "${local.base_name}-be-tg"
-  port        = 5000
+  name        = "${local.base_name}-backend-tg"
+  port        = 4200
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -64,9 +64,13 @@ resource "aws_lb_target_group" "backend" {
     unhealthy_threshold = 2
   }
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tags = {
     Name        = "${local.base_name}-backend-tg"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -104,7 +108,7 @@ resource "aws_security_group" "ai_internal" {
 
   tags = {
     Name        = "${local.base_name}-ai-internal-sg"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -114,8 +118,8 @@ resource "aws_security_group" "backend_ecs" {
   vpc_id      = var.vpc_id
 
   ingress {
-    from_port   = 5000
-    to_port     = 5000
+    from_port   = 4200
+    to_port     = 4200
     protocol    = "tcp"
     cidr_blocks = [var.vpc_cidr]
   }
@@ -138,12 +142,12 @@ resource "aws_security_group" "backend_ecs" {
 
   tags = {
     Name        = "${local.base_name}-backend-ecs-sg"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
 resource "aws_lb" "ai_internal" {
-  name               = "${local.base_name}-ai-alb"
+  name               = "${local.base_name}-ai-internal-alb"
   internal           = true
   load_balancer_type = "application"
   security_groups    = [aws_security_group.ai_internal.id]
@@ -153,7 +157,7 @@ resource "aws_lb" "ai_internal" {
 
   tags = {
     Name        = "${local.base_name}-ai-internal-alb"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -178,7 +182,7 @@ resource "aws_lb_target_group" "ai_internal" {
 
   tags = {
     Name        = "${local.base_name}-ai-internal-tg"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 

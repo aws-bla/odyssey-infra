@@ -9,7 +9,7 @@ resource "aws_codestarconnections_connection" "github" {
 
   tags = {
     Name        = "${local.base_name}-gh-conn"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -46,12 +46,12 @@ resource "aws_codepipeline" "frontend" {
     name = "Build"
 
     action {
-      name             = "Build"
-      category         = "Build"
-      owner            = "AWS"
-      provider         = "CodeBuild"
-      input_artifacts  = ["source_output"]
-      version          = "1"
+      name            = "Build"
+      category        = "Build"
+      owner           = "AWS"
+      provider        = "CodeBuild"
+      input_artifacts = ["source_output"]
+      version         = "1"
 
       configuration = {
         ProjectName = var.frontend_build_project_name
@@ -61,7 +61,7 @@ resource "aws_codepipeline" "frontend" {
 
   tags = {
     Name        = "${local.base_name}-frontend-pipeline"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -98,12 +98,12 @@ resource "aws_codepipeline" "backend" {
     name = "Build"
 
     action {
-      name             = "Build"
-      category         = "Build"
-      owner            = "AWS"
-      provider         = "CodeBuild"
-      input_artifacts  = ["source_output"]
-      version          = "1"
+      name            = "Build"
+      category        = "Build"
+      owner           = "AWS"
+      provider        = "CodeBuild"
+      input_artifacts = ["source_output"]
+      version         = "1"
 
       configuration = {
         ProjectName = var.backend_build_project_name
@@ -113,7 +113,7 @@ resource "aws_codepipeline" "backend" {
 
   tags = {
     Name        = "${local.base_name}-backend-pipeline"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -150,12 +150,12 @@ resource "aws_codepipeline" "ai" {
     name = "Build"
 
     action {
-      name             = "Build"
-      category         = "Build"
-      owner            = "AWS"
-      provider         = "CodeBuild"
-      input_artifacts  = ["source_output"]
-      version          = "1"
+      name            = "Build"
+      category        = "Build"
+      owner           = "AWS"
+      provider        = "CodeBuild"
+      input_artifacts = ["source_output"]
+      version         = "1"
 
       configuration = {
         ProjectName = var.ai_build_project_name
@@ -165,6 +165,6 @@ resource "aws_codepipeline" "ai" {
 
   tags = {
     Name        = "${local.base_name}-ai-pipeline"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }

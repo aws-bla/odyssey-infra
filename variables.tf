@@ -16,11 +16,7 @@ variable "region" {
   default     = "us-east-1"
 }
 
-variable "environment" {
-  description = "Environment name"
-  type        = string
-  default     = "dev"
-}
+
 
 variable "vpc_cidr" {
   description = "CIDR block for VPC"
@@ -50,4 +46,12 @@ variable "github_branch" {
   type        = string
   default     = "main"
 }
+
+variable "knowledge_base_id" {
+  description = "Knowledge Base ID for cross-account access"
+  type        = string
+  default     = "WFO99DODD7"
+}
+
+
 

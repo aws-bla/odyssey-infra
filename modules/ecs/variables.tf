@@ -8,10 +8,7 @@ variable "project" {
   type        = string
 }
 
-variable "environment" {
-  description = "Environment name"
-  type        = string
-}
+
 
 variable "vpc_id" {
   description = "VPC ID"
@@ -48,6 +45,8 @@ variable "secrets_arn" {
   type        = string
 }
 
+
+
 variable "execution_role_arn" {
   description = "ECS execution role ARN"
   type        = string
@@ -70,5 +69,25 @@ variable "backend_ecs_security_group_id" {
 
 variable "vpc_cidr" {
   description = "VPC CIDR block"
+  type        = string
+}
+
+variable "input_bucket_name" {
+  description = "Name of the input S3 bucket"
+  type        = string
+}
+
+variable "output_bucket_name" {
+  description = "Name of the output S3 bucket"
+  type        = string
+}
+
+variable "kb_secrets_arn" {
+  description = "ARN of the Knowledge Base secrets"
+  type        = string
+}
+
+variable "knowledge_base_id" {
+  description = "Knowledge Base ID"
   type        = string
 }

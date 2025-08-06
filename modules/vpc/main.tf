@@ -1,5 +1,5 @@
 locals {
-  base_name = "${var.company}-${var.project}-${terraform.workspace}-${var.component}"
+  base_name = "${var.company}-${var.project}-${terraform.workspace}"
 }
 
 resource "aws_vpc" "main" {
@@ -9,7 +9,7 @@ resource "aws_vpc" "main" {
 
   tags = {
     Name        = "${local.base_name}-01"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -18,7 +18,7 @@ resource "aws_internet_gateway" "main" {
 
   tags = {
     Name        = "${local.base_name}-igw-01"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -32,7 +32,7 @@ resource "aws_subnet" "public" {
 
   tags = {
     Name        = "${local.base_name}-subnet-public-${format("%02d", count.index + 1)}"
-    Environment = var.environment
+    Environment = terraform.workspace
     Type        = "public"
   }
 }
@@ -47,7 +47,7 @@ resource "aws_route_table" "public" {
 
   tags = {
     Name        = "${local.base_name}-rt-public-01"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -68,7 +68,7 @@ resource "aws_subnet" "private" {
 
   tags = {
     Name        = "${local.base_name}-subnet-private-${format("%02d", count.index + 1)}"
-    Environment = var.environment
+    Environment = terraform.workspace
     Type        = "private"
   }
 }
@@ -77,12 +77,12 @@ resource "aws_subnet" "private" {
 resource "aws_eip" "nat" {
   count = 2
 
-  domain = "vpc"
+  domain     = "vpc"
   depends_on = [aws_internet_gateway.main]
 
   tags = {
     Name        = "${local.base_name}-eip-nat-${format("%02d", count.index + 1)}"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -94,7 +94,7 @@ resource "aws_nat_gateway" "main" {
 
   tags = {
     Name        = "${local.base_name}-nat-${format("%02d", count.index + 1)}"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 
   depends_on = [aws_internet_gateway.main]
@@ -113,7 +113,7 @@ resource "aws_route_table" "private" {
 
   tags = {
     Name        = "${local.base_name}-rt-private-${format("%02d", count.index + 1)}"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 

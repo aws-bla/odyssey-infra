@@ -13,7 +13,7 @@ resource "aws_ecs_cluster" "main" {
 
   tags = {
     Name        = "${local.base_name}-cluster"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -40,7 +40,7 @@ resource "aws_security_group" "ai_ecs_tasks" {
 
   tags = {
     Name        = "${local.base_name}-ai-ecs-tasks-sg"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -52,16 +52,16 @@ resource "aws_ecs_task_definition" "backend" {
   cpu                      = 256
   memory                   = 512
   execution_role_arn       = var.execution_role_arn
-  task_role_arn           = var.task_role_arn
+  task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([
     {
       name  = "backend"
       image = "${var.backend_ecr_url}:latest"
-      
+
       portMappings = [
         {
-          containerPort = 5000
+          containerPort = 4200
           protocol      = "tcp"
         }
       ]
@@ -76,15 +76,27 @@ resource "aws_ecs_task_definition" "backend" {
       environment = [
         {
           name  = "PORT"
-          value = "5000"
+          value = "4200"
         },
         {
-          name  = "NODE_ENV"
-          value = "production"
+          name  = "FLASK_DEBUG"
+          value = terraform.workspace == "prod" ? "false" : "true"
         },
         {
           name  = "AI_SERVICE_URL"
           value = "http://${var.ai_internal_dns}:8000"
+        },
+        {
+          name  = "INPUT_BUCKET_NAME"
+          value = var.input_bucket_name
+        },
+        {
+          name  = "OUTPUT_BUCKET_NAME"
+          value = var.output_bucket_name
+        },
+        {
+          name  = "KNOWLEDGE_BASE_ID"
+          value = var.knowledge_base_id
         }
       ]
 
@@ -103,7 +115,7 @@ resource "aws_ecs_task_definition" "backend" {
 
   tags = {
     Name        = "${local.base_name}-backend-task"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -123,14 +135,14 @@ resource "aws_ecs_service" "backend" {
   load_balancer {
     target_group_arn = var.backend_target_group_arn
     container_name   = "backend"
-    container_port   = 5000
+    container_port   = 4200
   }
 
   depends_on = [var.backend_target_group_arn]
 
   tags = {
     Name        = "${local.base_name}-backend-service"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -139,16 +151,16 @@ resource "aws_ecs_task_definition" "ai" {
   family                   = "${local.base_name}-ai"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 512
-  memory                   = 1024
+  cpu                      = 256
+  memory                   = 512
   execution_role_arn       = var.execution_role_arn
-  task_role_arn           = var.task_role_arn
+  task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([
     {
       name  = "ai"
       image = "${var.ai_ecr_url}:latest"
-      
+
       portMappings = [
         {
           containerPort = 8000
@@ -160,6 +172,18 @@ resource "aws_ecs_task_definition" "ai" {
         {
           name      = "SECRETS"
           valueFrom = var.secrets_arn
+        },
+        {
+          name      = "AWS_ACCESS_KEY_ID"
+          valueFrom = "${var.kb_secrets_arn}:AWS_ACCESS_KEY_ID::"
+        },
+        {
+          name      = "AWS_SECRET_ACCESS_KEY"
+          valueFrom = "${var.kb_secrets_arn}:AWS_SECRET_ACCESS_KEY::"
+        },
+        {
+          name      = "AWS_DEFAULT_REGION"
+          valueFrom = "${var.kb_secrets_arn}:AWS_DEFAULT_REGION::"
         }
       ]
 
@@ -169,8 +193,16 @@ resource "aws_ecs_task_definition" "ai" {
           value = "8000"
         },
         {
-          name  = "ENVIRONMENT"
-          value = "production"
+          name  = "FLASK_DEBUG"
+          value = terraform.workspace == "prod" ? "false" : "true"
+        },
+        {
+          name  = "INPUT_BUCKET_NAME"
+          value = var.input_bucket_name
+        },
+        {
+          name  = "OUTPUT_BUCKET_NAME"
+          value = var.output_bucket_name
         }
       ]
 
@@ -179,7 +211,7 @@ resource "aws_ecs_task_definition" "ai" {
         options = {
           "awslogs-group"         = aws_cloudwatch_log_group.ai.name
           "awslogs-region"        = data.aws_region.current.name
-          "awslogs-stream-prefix" = "ecs"
+          "awslogs-stream-prefix" = "ai"
         }
       }
 
@@ -189,7 +221,7 @@ resource "aws_ecs_task_definition" "ai" {
 
   tags = {
     Name        = "${local.base_name}-ai-task"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -216,7 +248,7 @@ resource "aws_ecs_service" "ai" {
 
   tags = {
     Name        = "${local.base_name}-ai-service"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -227,7 +259,7 @@ resource "aws_cloudwatch_log_group" "backend" {
 
   tags = {
     Name        = "${local.base_name}-backend-logs"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
 
@@ -237,9 +269,13 @@ resource "aws_cloudwatch_log_group" "ai" {
 
   tags = {
     Name        = "${local.base_name}-ai-logs"
-    Environment = var.environment
+    Environment = terraform.workspace
   }
 }
+
+
+
+
 
 data "aws_region" "current" {}
 

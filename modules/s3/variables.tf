@@ -8,17 +8,8 @@ variable "project" {
   type        = string
 }
 
-variable "component" {
-  description = "Component name for resource naming"
-  type        = string
-}
-
 variable "bucket_name" {
   description = "Name of the S3 bucket"
   type        = string
 }
 
-variable "environment" {
-  description = "Environment name"
-  type        = string
-}
