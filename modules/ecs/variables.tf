@@ -8,8 +8,6 @@ variable "project" {
   type        = string
 }
 
-
-
 variable "vpc_id" {
   description = "VPC ID"
   type        = string
@@ -44,8 +42,6 @@ variable "secrets_arn" {
   description = "Secrets Manager ARN"
   type        = string
 }
-
-
 
 variable "execution_role_arn" {
   description = "ECS execution role ARN"

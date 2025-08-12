@@ -15,10 +15,9 @@ resource "aws_secretsmanager_secret" "app_secrets" {
 resource "aws_secretsmanager_secret_version" "app_secrets" {
   secret_id = aws_secretsmanager_secret.app_secrets.id
   secret_string = jsonencode({
-    database_url = "postgresql://user:password@localhost:5432/dbname"
-    api_key      = "your-api-key-here"
-    jwt_secret   = "your-jwt-secret-here"
-    redis_url    = "redis://localhost:6379"
+    AWS_ACCESS_KEY_ID     = "placeholder-backend-access-key"
+    AWS_SECRET_ACCESS_KEY = "placeholder-backend-secret-key"
+    GITHUB_TOKEN          = "placeholder-github-token"
   })
 
   lifecycle {
@@ -40,12 +39,12 @@ resource "aws_secretsmanager_secret" "kb_secrets" {
 resource "aws_secretsmanager_secret_version" "kb_secrets" {
   secret_id = aws_secretsmanager_secret.kb_secrets.id
   secret_string = jsonencode({
-    AWS_ACCESS_KEY_ID     = "placeholder-access-key-id"
-    AWS_SECRET_ACCESS_KEY = "placeholder-secret-access-key"
-    AWS_DEFAULT_REGION    = "us-west-2"
+    KB_AWS_ACCESS_KEY_ID     = "placeholder-kb-access-key"
+    KB_AWS_SECRET_ACCESS_KEY = "placeholder-kb-secret-key"
   })
 
   lifecycle {
     ignore_changes = [secret_string]
   }
 }
+

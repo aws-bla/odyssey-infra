@@ -68,8 +68,8 @@ resource "aws_ecs_task_definition" "backend" {
 
       secrets = [
         {
-          name      = "SECRETS"
-          valueFrom = var.secrets_arn
+          name      = "GITHUB_TOKEN"
+          valueFrom = "${var.secrets_arn}:GITHUB_TOKEN::"
         }
       ]
 
@@ -79,24 +79,16 @@ resource "aws_ecs_task_definition" "backend" {
           value = "4200"
         },
         {
-          name  = "FLASK_DEBUG"
-          value = terraform.workspace == "prod" ? "false" : "true"
+          name  = "AWS_REGION"
+          value = "us-east-1"
         },
         {
           name  = "AI_SERVICE_URL"
           value = "http://${var.ai_internal_dns}:8000"
         },
         {
-          name  = "INPUT_BUCKET_NAME"
-          value = var.input_bucket_name
-        },
-        {
-          name  = "OUTPUT_BUCKET_NAME"
-          value = var.output_bucket_name
-        },
-        {
-          name  = "KNOWLEDGE_BASE_ID"
-          value = var.knowledge_base_id
+          name  = "BEDROCK_MODEL"
+          value = "bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0"
         }
       ]
 
@@ -151,8 +143,8 @@ resource "aws_ecs_task_definition" "ai" {
   family                   = "${local.base_name}-ai"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 256
-  memory                   = 512
+  cpu                      = 512
+  memory                   = 1024
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
@@ -170,20 +162,12 @@ resource "aws_ecs_task_definition" "ai" {
 
       secrets = [
         {
-          name      = "SECRETS"
-          valueFrom = var.secrets_arn
+          name      = "KB_AWS_ACCESS_KEY_ID"
+          valueFrom = "${var.kb_secrets_arn}:KB_AWS_ACCESS_KEY_ID::"
         },
         {
-          name      = "AWS_ACCESS_KEY_ID"
-          valueFrom = "${var.kb_secrets_arn}:AWS_ACCESS_KEY_ID::"
-        },
-        {
-          name      = "AWS_SECRET_ACCESS_KEY"
-          valueFrom = "${var.kb_secrets_arn}:AWS_SECRET_ACCESS_KEY::"
-        },
-        {
-          name      = "AWS_DEFAULT_REGION"
-          valueFrom = "${var.kb_secrets_arn}:AWS_DEFAULT_REGION::"
+          name      = "KB_AWS_SECRET_ACCESS_KEY"
+          valueFrom = "${var.kb_secrets_arn}:KB_AWS_SECRET_ACCESS_KEY::"
         }
       ]
 
@@ -193,16 +177,12 @@ resource "aws_ecs_task_definition" "ai" {
           value = "8000"
         },
         {
-          name  = "FLASK_DEBUG"
-          value = terraform.workspace == "prod" ? "false" : "true"
+          name  = "AWS_REGION"
+          value = "us-east-1"
         },
         {
-          name  = "INPUT_BUCKET_NAME"
-          value = var.input_bucket_name
-        },
-        {
-          name  = "OUTPUT_BUCKET_NAME"
-          value = var.output_bucket_name
+          name  = "KB_AWS_REGION"
+          value = "us-west-2"
         }
       ]
 
@@ -272,10 +252,6 @@ resource "aws_cloudwatch_log_group" "ai" {
     Environment = terraform.workspace
   }
 }
-
-
-
-
 
 data "aws_region" "current" {}
 
