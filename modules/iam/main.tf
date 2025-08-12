@@ -117,7 +117,8 @@ data "aws_iam_policy_document" "ecs_task_policy" {
     effect = "Allow"
     actions = [
       "bedrock:Retrieve",
-      "bedrock:ListKnowledgeBases"
+      "bedrock:ListKnowledgeBases",
+      "bedrock:InvokeModel"
     ]
     resources = ["*"]
   }

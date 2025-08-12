@@ -38,6 +38,7 @@ resource "aws_lb" "backend" {
   subnets            = var.public_subnet_ids
 
   enable_deletion_protection = false
+  idle_timeout              = 1800  # 30 minutes for long-running AI processes
 
   tags = {
     Name        = "${local.base_name}-backend-alb"
@@ -63,6 +64,10 @@ resource "aws_lb_target_group" "backend" {
     timeout             = 5
     unhealthy_threshold = 2
   }
+
+  # Increase timeout for long-running AI processes (30 minutes)
+  deregistration_delay = 300
+  slow_start          = 0
 
   lifecycle {
     create_before_destroy = true
@@ -154,6 +159,7 @@ resource "aws_lb" "ai_internal" {
   subnets            = var.private_subnet_ids
 
   enable_deletion_protection = false
+  idle_timeout              = 1800  # 30 minutes for long-running AI processes
 
   tags = {
     Name        = "${local.base_name}-ai-internal-alb"
