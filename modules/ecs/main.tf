@@ -89,6 +89,10 @@ resource "aws_ecs_task_definition" "backend" {
         {
           name  = "BEDROCK_MODEL"
           value = "bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0"
+        },
+        {
+          name  = "CLOUDFRONT_DOMAIN"
+          value = var.cloudfront_domain
         }
       ]
 

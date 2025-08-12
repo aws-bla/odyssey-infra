@@ -87,3 +87,8 @@ variable "knowledge_base_id" {
   description = "Knowledge Base ID"
   type        = string
 }
+
+variable "cloudfront_domain" {
+  description = "CloudFront distribution domain name"
+  type        = string
+}

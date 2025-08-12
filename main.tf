@@ -114,6 +114,7 @@ module "ecs" {
   output_bucket_name            = module.s3.output_bucket_name
   kb_secrets_arn                = module.secrets.kb_secrets_arn
   knowledge_base_id             = var.knowledge_base_id
+  cloudfront_domain             = module.cloudfront.distribution_domain_name
 }
 
 # CodeBuild Projects
